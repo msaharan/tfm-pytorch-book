@@ -38,7 +38,7 @@ _quarto.yml           book navigation and output configuration
 Prerequisites:
 
 - [Quarto](https://quarto.org/)
-- Python 3.11+
+- Python 3.11 or 3.12
 - [uv](https://docs.astral.sh/uv/)
 
 ```bash
@@ -48,6 +48,9 @@ quarto preview
 ```
 
 Rendered output is written to `_book/`.
+
+The project currently pins PyTorch to the 2.2 release line because later
+releases do not provide wheels for Intel-based macOS.
 
 ## Editorial principle
 
