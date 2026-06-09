@@ -1,0 +1,105 @@
+# Why Tabular Foundation Models?
+
+## Reader outcome
+
+After this chapter, you will be able to distinguish fitting one supervised
+model from pretraining a model across tasks, and explain why a labeled table can
+serve as inference-time context.
+
+## Change the unit of learning
+
+In ordinary supervised learning, a training algorithm receives one dataset
+$D = (X, y)$ and produces parameters specialized to that dataset:
+
+$$
+\theta_D = \operatorname{Fit}(D).
+$$
+
+At prediction time, the fitted parameters and a new row produce a prediction:
+
+$$
+\hat{y}_* = f_{\theta_D}(x_*).
+$$
+
+A tabular foundation model moves much of that fitting work into pretraining.
+It learns parameters $\theta$ across a distribution of tasks. At inference
+time, a new labeled context and query features are provided together:
+
+$$
+\hat{y}_*
+=
+f_\theta(X_{\text{context}}, y_{\text{context}}, x_*).
+$$
+
+The parameters are shared across tasks. The context identifies the current
+problem.
+
+## Why synthetic tasks matter
+
+Large collections of naturally aligned tabular tasks are difficult to obtain.
+Prior-data fitted networks address this by sampling synthetic tasks from an
+explicit task-generating process:
+
+```text
+sample task assumptions
+    -> sample a data-generating mechanism
+    -> sample context and query rows
+    -> train the model to predict query targets from context
+```
+
+The task generator is not merely a source of more rows. It defines the kinds of
+relationships the model is encouraged to handle. This is why the prior is a
+modeling decision rather than a neutral implementation detail.
+
+## Approximate predictive inference
+
+From a probabilistic perspective, the desired object is a posterior predictive
+distribution:
+
+$$
+p(y_* \mid x_*, X_{\text{context}}, y_{\text{context}}).
+$$
+
+A pretrained TFM amortizes the work of approximating this distribution across
+many tasks. Instead of running a new inference or optimization procedure from
+scratch for every dataset, one forward pass conditions on the observed table.
+
+This viewpoint explains several architectural requirements:
+
+- context features and labels must both influence query predictions;
+- query labels must remain hidden;
+- the model must handle varying relationships across tasks;
+- the pretraining task distribution strongly shapes later behavior.
+
+## TFMs do not remove evaluation
+
+Pretraining does not make a model universally appropriate. A TFM can be
+misaligned with a domain, exceed practical resource limits, or lose to a tuned
+boosted-tree model. Evaluation must still address:
+
+- leakage and split design;
+- strong conventional baselines;
+- predictive quality and calibration;
+- latency, throughput, and memory;
+- behavior under dataset shift;
+- whether the task resembles the model's supported regime.
+
+The engineering question is not “Are TFMs better?” It is “Under which task and
+operating conditions does this model provide useful behavior?”
+
+## Summary
+
+- Conventional supervised learning specializes parameters to one dataset.
+- TFMs pretrain shared parameters across tasks and condition on a new table.
+- Synthetic task generation encodes assumptions about useful tabular problems.
+- TFMs can be viewed as amortizing predictive inference.
+- Responsible use still requires task-specific evaluation and strong baselines.
+
+## Exercises
+
+1. Identify which object changes between tasks in conventional fitting and in
+   TFM inference.
+2. Give two ways a synthetic task prior could be poorly aligned with a real
+   application.
+3. Explain why random row splitting may be invalid for a time-dependent table.
+

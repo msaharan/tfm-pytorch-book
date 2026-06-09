@@ -1,0 +1,118 @@
+# Tensors Have Semantic Axes
+
+## Reader outcome
+
+After this chapter, you will be able to state a tensor's public contract,
+predict the shape produced by common table operations, and distinguish a
+numerically valid operation from a semantically valid one.
+
+## Start with the contract
+
+Consider a batch of tables:
+
+```python
+x.shape == (batch, rows, columns)
+```
+
+PyTorch knows only that `x` has three numbered axes. It does not know that axis
+zero separates tasks, axis one separates rows within each task, and axis two
+separates columns. That meaning belongs to the model.
+
+Our recurring model uses this public input contract:
+
+| Input | Shape | Meaning |
+|---|---:|---|
+| `x` | `(batch, rows, columns)` | context and query feature values |
+| `y_context` | `(batch, context_rows)` | labels available to the model |
+| `n_context` | scalar | boundary between context and query rows |
+
+The ordering convention is simple:
+
+```text
+rows = [labeled context rows | unlabeled query rows]
+```
+
+Making that convention explicit is the first protection against target leakage.
+There is no `y_query` argument for the model to accidentally consume.
+
+## Shape is necessary, not sufficient
+
+Suppose we want one mean per table and column using only context rows:
+
+```python
+context_mean = x[:, :n_context].mean(dim=1, keepdim=True)
+centered = x - context_mean
+```
+
+The geometry is:
+
+| Expression | Shape | Meaning |
+|---|---:|---|
+| `x[:, :n_context]` | `(batch, context_rows, columns)` | observed rows only |
+| `context_mean` | `(batch, 1, columns)` | context-derived column means |
+| `centered` | `(batch, rows, columns)` | every row centered by context |
+
+Changing the first line to `x.mean(dim=1, keepdim=True)` still produces a
+broadcast-compatible tensor. It also allows query rows to influence the
+statistic used to transform themselves. The program remains shape-correct while
+its information-flow contract changes.
+
+## Make important contracts executable
+
+The companion package provides a deliberately small helper:
+
+```python
+from tfm_pytorch_book.contracts import TABLE
+
+TABLE.validate(x, name="x")
+```
+
+This does not give PyTorch named semantic axes. It converts an assumption that
+would otherwise live only in the reader's head into an early, descriptive
+failure.
+
+Use assertions for public boundaries and high-risk internal transitions. Do not
+annotate every temporary tensor until the code becomes harder to read than the
+model.
+
+## A reading procedure
+
+When encountering a tensor operation:
+
+1. Write the current shape.
+2. Name every axis semantically.
+3. Identify which axes the operation reads, removes, adds, or reorders.
+4. State which positions contribute information to the result.
+5. Check whether the resulting contract matches the next operation.
+
+This procedure is intentionally slower than guessing. With practice, it becomes
+the fastest way to read unfamiliar model code because it prevents long
+debugging sessions caused by an early incorrect assumption.
+
+## Failure mode: reducing the wrong axis
+
+For `x.shape == (batch, rows, columns)`, these expressions are both legal:
+
+```python
+x.mean(dim=1)  # one vector per table and column
+x.mean(dim=2)  # one value per table and row
+```
+
+They answer different questions. If later dimensions happen to align through
+broadcasting, reducing the wrong axis may not produce an exception. Tests
+should therefore check meaning-bearing invariants, not only final shape.
+
+## Summary
+
+- PyTorch stores numerical axes; model code gives them meaning.
+- A tensor contract combines shape, semantic axes, and information boundaries.
+- Shape correctness does not imply semantic or information-flow correctness.
+- Important contracts should be expressed in prose, tables, and tests.
+
+## Exercises
+
+1. For a tensor shaped `(8, 20, 6)`, describe the result and information flow
+   of `x[:, :15].mean(dim=1, keepdim=True)`.
+2. Explain why `x.transpose(1, 2)` changes geometry but learns nothing.
+3. Write a test that rejects an `n_context` value that leaves no query rows.
+

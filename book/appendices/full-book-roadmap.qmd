@@ -1,0 +1,42 @@
+# Full Book Roadmap {.unnumbered}
+
+The rendered manuscript currently contains the four-chapter pilot. The complete
+book is planned in four parts.
+
+## Part I: Read PyTorch as an engineer
+
+1. Tensors and semantic axes
+2. Shape transformations and memory layout
+3. Autograd, modules, parameters, and state
+4. Layers and model composition
+5. Training, evaluation, and checkpointing
+6. Debugging and testing tensor programs
+
+## Part II: Build transformers for tables
+
+7. Attention as information flow
+8. Self-attention and cross-attention from scratch
+9. Representing cells, columns, rows, and datasets
+10. Context/query boundaries and leakage prevention
+11. Reading a compact transformer end to end
+
+## Part III: Build a tabular foundation model
+
+12. From fitted models to prior-data fitted networks
+13. Posterior predictive distributions and task priors
+14. Synthetic task generation
+15. Pretraining across tasks
+16. Target-aware representations
+17. Classification, regression, and uncertainty
+
+## Part IV: Engineer and evaluate real systems
+
+18. Reading production TFM architectures
+19. Caching, batching, precision, and memory
+20. Fine-tuning, embeddings, and familiar estimator interfaces
+21. Evaluation against strong baselines
+22. Reliability, limitations, and appropriate use
+
+The roadmap is intentionally subject to revision after the pilot receives
+technical-reader feedback.
+

@@ -1,0 +1,119 @@
+# Attention Is an Information-Flow Rule
+
+## Reader outcome
+
+After this chapter, you will be able to explain attention as a dependency
+structure, distinguish self-attention from cross-attention, and test whether a
+model preserves a context/query boundary.
+
+## Queries choose; keys describe; values contribute
+
+Scaled dot-product attention can be written as:
+
+$$
+\operatorname{Attention}(Q, K, V)
+=
+\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d}}\right)V.
+$$
+
+This equation describes both computation and information flow:
+
+- each query selects a weighted combination;
+- keys determine the selection weights;
+- values supply the information combined into the output.
+
+The output has one position for each query. Information can arrive from every
+position represented among the keys and values.
+
+## Cross-attention expresses the boundary directly
+
+For in-context prediction, query rows should use labeled context rows without
+contributing query labels. `MiniTFM` makes this visible:
+
+```python
+query_updates, _ = self.context_attention(
+    query=query_states,
+    key=context_states,
+    value=context_states,
+    need_weights=False,
+)
+```
+
+The tensor contract is:
+
+| Role | Shape | Allowed information |
+|---|---:|---|
+| query | `(batch, query_rows, embed)` | query features |
+| key/value | `(batch, context_rows, embed)` | context features and labels |
+| output | `(batch, query_rows, embed)` | context-conditioned query states |
+
+Restricting keys and values is often clearer than constructing a full
+self-attention mask. Both approaches can be correct, but the sliced
+cross-attention interface makes the intended dependency easier to inspect.
+
+## A shape test cannot prove the boundary
+
+A model that accidentally allows query-to-query attention can return exactly
+the expected shape. Test the dependency itself using controlled perturbations.
+
+The companion tests change one query row and verify that another query row's
+prediction remains unchanged:
+
+```python
+changed = x.clone()
+changed[:, first_query] += 100
+
+original_logits = model(x, y_context, n_context)
+changed_logits = model(changed, y_context, n_context)
+
+torch.testing.assert_close(
+    original_logits[:, second_query],
+    changed_logits[:, second_query],
+)
+```
+
+This is an information-flow test. It states an architectural promise in a form
+that can fail during refactoring.
+
+## Residual paths also carry information
+
+Attention is not the only dependency path. In `MiniTFM`, the update is added
+back to the original query representation:
+
+```python
+query_states + query_updates
+```
+
+Therefore each output depends on:
+
+- its own feature-derived query state through the residual path;
+- all labeled context states through cross-attention.
+
+It does not depend on another query row because query rows are not keys or
+values and there is no operation that mixes query positions.
+
+## Failure mode: convenient self-attention
+
+A tempting implementation concatenates context and query states, applies
+unrestricted self-attention, and slices query outputs afterward. The final
+slice does not undo dependencies created inside attention. Query rows have
+already exchanged information.
+
+That behavior may be desirable in a transductive model, but it must be a
+deliberate contract rather than an unnoticed consequence of convenient code.
+
+## Summary
+
+- Attention defines which positions can contribute to each output.
+- Cross-attention makes context-to-query flow explicit.
+- Residual and preprocessing paths must be included in a dependency account.
+- Perturbation tests catch boundary violations that shape tests cannot.
+
+## Exercises
+
+1. Draw the allowed dependency graph for three context and two query rows.
+2. Modify the model conceptually so queries can exchange feature information
+   without ever seeing query labels.
+3. Explain why checking attention weights alone does not prove the absence of
+   another information path.
+

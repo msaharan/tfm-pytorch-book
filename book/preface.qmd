@@ -1,0 +1,49 @@
+# Preface {.unnumbered}
+
+Most PyTorch tutorials explain operations one at a time. Most descriptions of
+tabular foundation models begin from a paper or a high-level estimator API.
+There is a gap between those two views: the ability to recover the intended
+model from a real tensor program and determine whether the implementation
+actually preserves that intent.
+
+This book is designed around that gap.
+
+## One model, developed repeatedly
+
+The manuscript follows an educational model called `MiniTFM`. It begins as a
+small table-shaped tensor program. Later chapters add target representations,
+attention, synthetic tasks, pretraining, probabilistic outputs, and systems
+features.
+
+The model is deliberately smaller than a production TFM. Its purpose is to make
+important decisions visible:
+
+- what a row, column, task, and query axis means;
+- where observed labels enter the model;
+- why query labels must remain unavailable;
+- how pretraining across tasks differs from fitting one dataset;
+- which optimizations alter only execution and which can alter behavior.
+
+Production systems are then studied as case studies, not treated as unexplained
+sources of truth.
+
+## How to use the book
+
+Each chapter contains:
+
+- a concrete reader outcome;
+- a running tensor contract;
+- mathematical and implementation views of the same idea;
+- failure cases and tests;
+- exercises that require explanation or implementation.
+
+Read with a Python environment available. Run the examples, change the shapes,
+break the boundaries, and make the tests catch the breakage.
+
+## A note on a fast-moving field
+
+Specific tabular foundation models will change faster than the underlying
+reasoning tools. The main text therefore emphasizes durable concepts.
+Version-specific architecture and repository analyses are clearly marked as
+case studies and record the model version or commit they describe.
+

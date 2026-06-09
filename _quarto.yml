@@ -1,0 +1,33 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "Engineering Tabular Foundation Models with PyTorch"
+  subtitle: "From Tensor Geometry and Attention to In-Context Learning Systems"
+  author: "Manish Saharan"
+  repo-url: https://github.com/msaharan/tfm-pytorch-book
+  repo-actions: [edit, issue]
+  chapters:
+    - index.qmd
+    - book/preface.qmd
+    - part: "Pilot: From PyTorch to a Minimal TFM"
+      chapters:
+        - book/part-1/semantic-axes.qmd
+        - book/part-2/attention-information-flow.qmd
+        - book/part-3/why-tabular-foundation-models.qmd
+        - book/part-3/build-minimal-tfm.qmd
+    - book/appendices/full-book-roadmap.qmd
+
+format:
+  html:
+    theme: cosmo
+    code-copy: true
+    code-overflow: wrap
+    toc-depth: 3
+    number-sections: true
+
+execute:
+  freeze: auto
+  warning: false
+

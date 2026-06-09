@@ -1,0 +1,57 @@
+---
+title: "Engineering Tabular Foundation Models with PyTorch"
+subtitle: "From Tensor Geometry and Attention to In-Context Learning Systems"
+---
+
+Tabular foundation models change the unit of learning. A conventional
+supervised model is fitted to one dataset. A tabular foundation model is
+pretrained across many tasks and then uses a new labeled table as context for
+prediction.
+
+That idea is compact. Its implementation is not.
+
+Real systems combine tensor reshaping, target-aware representations, multiple
+attention axes, synthetic task generation, probabilistic objectives, caches,
+mixed precision, and interfaces familiar to tabular-data practitioners. A
+shape-correct implementation can still leak query information, learn the wrong
+computation, or fail under realistic memory constraints.
+
+This book develops a practical way to reason about those systems:
+
+| Lens | Central question |
+|---|---|
+| Tensor geometry | What does every axis mean, and how does it change? |
+| Learned computation | Which transformations own trainable state? |
+| Information flow | Which values are allowed to influence each output? |
+| Runtime behavior | How do training, evaluation, caching, and devices change execution? |
+
+The same lenses are used to learn PyTorch, derive tabular foundation models,
+build a small one, and read production-oriented implementations.
+
+## Who this book is for
+
+The primary reader is a data scientist or ML engineer who:
+
+- understands ordinary supervised learning and tabular evaluation;
+- writes Python and has encountered PyTorch;
+- wants to move beyond calling pretrained models;
+- values implementations that can be inspected, tested, and operated.
+
+The book does not assume prior transformer implementation experience. It does
+assume that the reader is willing to trace shapes, read code, and test claims.
+
+## What you will be able to do
+
+By the end of the complete book, you should be able to:
+
+- read unfamiliar PyTorch model code systematically;
+- explain prior-data fitted networks and tabular in-context learning;
+- implement and pretrain a compact tabular foundation model;
+- test tensor contracts and information-flow boundaries;
+- evaluate TFMs against strong conventional baselines;
+- diagnose memory, throughput, caching, and numerical issues;
+- distinguish durable architectural ideas from version-specific details.
+
+The current edition begins with a four-chapter pilot. Its purpose is to validate
+the book's core teaching method before the complete manuscript is expanded.
+

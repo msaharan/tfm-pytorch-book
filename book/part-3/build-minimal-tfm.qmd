@@ -1,0 +1,137 @@
+# Build a Minimal In-Context Table Predictor
+
+## Reader outcome
+
+After this chapter, you will be able to trace the complete `MiniTFM` forward
+pass through geometry, learned computation, information flow, and runtime
+behavior, and identify what remains before it becomes a foundation model.
+
+## Public contract
+
+`MiniTFM` receives all feature rows, the labels belonging only to context rows,
+and the row boundary:
+
+```python
+logits = model(x, y_context, n_context)
+```
+
+For `x.shape == (batch, rows, columns)`, the output shape is:
+
+```text
+(batch, rows - n_context, classes)
+```
+
+Only query predictions are returned.
+
+## Embed scalar cells and column identity
+
+Each scalar cell becomes a vector:
+
+```python
+cell_states = self.value_projection(x.unsqueeze(-1))
+cell_states = cell_states + self.column_embedding
+```
+
+| Expression | Shape |
+|---|---:|
+| `x` | `(batch, rows, columns)` |
+| `x.unsqueeze(-1)` | `(batch, rows, columns, 1)` |
+| `cell_states` | `(batch, rows, columns, embed)` |
+
+`value_projection` is shared across cells. The learned column embedding lets
+the same numerical value take on a different representation in different
+columns.
+
+## Compress cells into row states
+
+The pilot model uses a simple mean:
+
+```python
+row_states = cell_states.mean(dim=2)
+```
+
+This removes the column axis and produces `(batch, rows, embed)`. The operation
+is deliberately limited: it cannot model rich interactions among columns.
+Later chapters replace it with learned feature interaction while preserving the
+same row-state contract.
+
+## Add observed targets to context
+
+```python
+context_states = row_states[:, :n_context]
+context_states = context_states + self.target_embedding(y_context)
+query_states = row_states[:, n_context:]
+```
+
+This is the central safety boundary. Context states contain feature and target
+information. Query states contain feature information only.
+
+## Predict through cross-attention
+
+Query states attend to context states, receive an update, and pass through an
+output head:
+
+```python
+query_updates, _ = self.context_attention(
+    query=query_states,
+    key=context_states,
+    value=context_states,
+    need_weights=False,
+)
+logits = self.output_head(self.output_norm(query_states + query_updates))
+```
+
+The four-lens account is:
+
+| Lens | Account |
+|---|---|
+| Tensor geometry | cell vectors become row vectors; query rows become class logits |
+| Learned computation | projections, embeddings, attention, normalization, and output head own state |
+| Information flow | each query uses its own features and every labeled context state |
+| Runtime behavior | dropout inside attention changes between training and evaluation modes |
+
+## What makes it minimal, not foundational
+
+`MiniTFM` has the interface of an in-context table predictor, but random
+initialization gives it no useful cross-task behavior. It becomes a foundation
+model only after training across a sufficiently broad task distribution.
+
+It also omits important capabilities:
+
+- learned interaction across columns before row compression;
+- robust numerical and categorical feature handling;
+- synthetic task generation and pretraining;
+- regression and probabilistic predictions;
+- batching, caching, mixed precision, and memory controls;
+- careful evaluation against conventional baselines.
+
+These omissions are useful. They define the remaining book.
+
+## Test the intended model, not only the code path
+
+The companion tests verify:
+
+- output geometry;
+- invalid public contracts fail early;
+- changing context labels can change predictions;
+- changing one query row cannot change another query row.
+
+The last two tests describe the intended dependency graph. They remain valuable
+even after the underlying implementation becomes more sophisticated.
+
+## Summary
+
+- A small model can expose the complete context/query prediction contract.
+- Target embeddings belong only to observed context rows.
+- Cross-attention conditions query representations on labeled context.
+- An architecture becomes a foundation model through cross-task pretraining.
+- Tests should protect semantic and information-flow contracts during growth.
+
+## Exercises
+
+1. Replace mean column pooling with an MLP applied independently to each cell.
+   What limitation remains?
+2. Add a context-only normalization statistic and write a perturbation test that
+   detects accidental query leakage.
+3. List the components required to train `MiniTFM` across synthetic tasks.
+
